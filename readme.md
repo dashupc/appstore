@@ -1,102 +1,83 @@
-内部软件分发平台
+# **内部软件分发平台**
 
-这是一个基于 Python/Flask 构建的轻量级内部软件分发平台。它集成了 Web 管理后台、美观的 PWA 客户端 以及 支持静默安装的桌面客户端，适用于企业内部快速发布和安装软件。
+这是一个基于 Python/Flask 构建的轻量级内部软件分发平台。它集成了 **Web 管理后台**、**美观的 PWA 客户端** 以及 **支持静默安装的桌面客户端**，适用于企业内部快速发布和安装软件。
 
-🚀 主要功能
+## **🚀 主要功能**
 
 本项目由三部分组成，实现了完整的软件发布和分发流程：
 
 | 组件 | 技术栈 | 核心功能 |
-| 后端 & Web 管理 (app.py) | Python / Flask / SQLite | 存储软件信息、管理 Logo 文件、提供 REST API 接口、Web 界面管理软件列表（CRUD）。 |
-| Web PWA 客户端 (index.html) | HTML / Tailwind CSS / JS | 提供响应式、美观的软件商店界面，供用户通过浏览器查看和下载软件。 |
-| 桌面客户端 (desktop_client.py) | Python / Tkinter / ttkbootstrap | 专为 Windows 设计，能够以管理员权限执行静默安装，简化员工安装流程。 |
+| :---- | :---- | :---- |
+| **后端 & Web 管理** (app.py) | Python / Flask / SQLite | 存储软件信息、管理 Logo 文件、提供 REST API 接口、Web 界面管理软件列表（CRUD）。 |
+| **Web PWA 客户端** (index.html) | HTML / Tailwind CSS / JS | 提供响应式、美观的软件商店界面，供用户通过浏览器查看和下载软件。 |
+| **桌面客户端** (desktop\_client.py) | Python / Tkinter / ttkbootstrap | 专为 Windows 设计，能够以管理员权限执行**静默安装**，简化员工安装流程。 |
 
-🛠️ 环境准备
+## **🛠️ 环境准备**
 
 本项目需要 Python 环境和一些第三方库。
 
-1. Python 环境
+### **1\. Python 环境**
 
 确保您的系统已安装 Python 3.8 或更高版本。
 
-2. 依赖库安装
+### **2\. 依赖库安装**
 
 在终端运行以下命令安装所需的 Python 库：
 
 pip install flask requests ttkbootstrap Pillow
 
+* Flask: 用于构建后端服务。  
+* requests: 用于客户端请求 API 和下载文件。  
+* ttkbootstrap: 用于美化桌面客户端的界面。  
+* Pillow: 用于桌面客户端加载和显示 Logo。
 
+## **⚙️ 设置与运行**
 
-Flask: 用于构建后端服务。
-
-requests: 用于客户端请求 API 和下载文件。
-
-ttkbootstrap: 用于美化桌面客户端的界面。
-
-Pillow: 用于桌面客户端加载和显示 Logo。
-
-⚙️ 设置与运行
-
-1. 启动后端服务 (app.py)
+### **1\. 启动后端服务 (app.py)**
 
 后端服务负责数据存储、API 接口和管理界面。
 
-运行文件：
+1. **运行文件：**  
+   python app.py
 
-python app.py
+2. **初始化：** 首次运行时，app.py 会自动创建 appstore.db 数据库文件和 logos 文件夹。  
+3. **服务地址：** 默认运行在 http://localhost:5000。
 
-
-
-初始化： 首次运行时，app.py 会自动创建 appstore.db 数据库文件和 logos 文件夹。
-
-服务地址： 默认运行在 http://localhost:5000。
-
-2. 管理软件（Web 后台）
+### **2\. 管理软件（Web 后台）**
 
 在浏览器中打开以下地址，即可进行软件的管理：
 
-软件列表 (首页)： http://localhost:5000/
+* **软件列表 (首页)：** http://localhost:5000/  
+* **添加新软件：** http://localhost:5000/add  
+* **编辑/删除：** 在首页点击对应的按钮进入编辑页面。
 
-添加新软件： http://localhost:5000/add
+**提示:** 在 Web 后台添加软件时，请务必填写正确的 **下载链接** 和 **静默安装参数**，以供桌面客户端使用。
 
-编辑/删除： 在首页点击对应的按钮进入编辑页面。
-
-提示: 在 Web 后台添加软件时，请务必填写正确的 下载链接 和 静默安装参数，以供桌面客户端使用。
-
-3. 使用 Web PWA 客户端 (index.html)
+### **3\. 使用 Web PWA 客户端 (index.html)**
 
 Web 客户端是面向普通用户的软件展示界面。
 
-打开文件： 直接在浏览器中打开 index.html 文件。
+1. **打开文件：** 直接在浏览器中打开 index.html 文件。  
+2. **数据连接：** 客户端通过 JavaScript 调用 http://localhost:5000/api/software 获取数据。  
+3. **下载方式：** 用户点击按钮后直接通过浏览器下载软件安装包。
 
-数据连接： 客户端通过 JavaScript 调用 http://localhost:5000/api/software 获取数据。
+### **4\. 使用桌面客户端 (desktop\_client.py)**
 
-下载方式： 用户点击按钮后直接通过浏览器下载软件安装包。
+桌面客户端专为需要 **静默安装** 的场景设计（例如，一键安装公司内部工具）。
 
-4. 使用桌面客户端 (desktop_client.py)
+1. **运行客户端：**  
+   python desktop\_client.py
 
-桌面客户端专为需要 静默安装 的场景设计（例如，一键安装公司内部工具）。
+2. **权限提升 (Windows)：** 客户端启动时会自动检查权限。如果不是管理员权限，它会提示并尝试以管理员身份重新运行，以确保静默安装可以成功。  
+3. **安装流程：**  
+   * 对于 **静默安装** 类型的软件：点击按钮后，客户端将自动下载、并以管理员权限执行静默安装命令。  
+   * 对于 **手动下载** 类型的软件：点击按钮后，客户端将下载文件并打开下载目录，供用户手动安装。
 
-运行客户端：
+## **📂 文件结构**
 
-python desktop_client.py
-
-
-
-权限提升 (Windows)： 客户端启动时会自动检查权限。如果不是管理员权限，它会提示并尝试以管理员身份重新运行，以确保静默安装可以成功。
-
-安装流程：
-
-对于 静默安装 类型的软件：点击按钮后，客户端将自动下载、并以管理员权限执行静默安装命令。
-
-对于 手动下载 类型的软件：点击按钮后，客户端将下载文件并打开下载目录，供用户手动安装。
-
-📂 文件结构
-
-/ (项目根目录)
-├── app.py              # 【后端】Flask 服务、API 和 Web 管理后台
-├── index.html          # 【客户端】PWA 软件商店网页
-├── desktop_client.py   # 【客户端】Python 桌面静默安装程序
-├── appstore.db         # 自动创建 - SQLite 数据库文件
-└── /logos              # 自动创建 - 软件 Logo 图片存储目录
-
+/ (项目根目录)  
+├── app.py              \# 【后端】Flask 服务、API 和 Web 管理后台  
+├── index.html          \# 【客户端】PWA 软件商店网页  
+├── desktop\_client.py   \# 【客户端】Python 桌面静默安装程序  
+├── appstore.db         \# 自动创建 \- SQLite 数据库文件  
+└── /logos              \# 自动创建 \- 软件 Logo 图片存储目录  
