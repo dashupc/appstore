@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>软件商店 PWA 客户端</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 Inter 字体 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 md:p-10">
+    <div class="max-w-4xl mx-auto bg-white shadow-2xl rounded-xl p-6 sm:p-8">
+        <!-- Header -->
+        <header class="mb-8 border-b pb-4 flex items-center justify-between">
+            <h1 class="text-3xl font-extrabold text-indigo-700 tracking-tight">软件商店</h1>
+            <button id="refreshButton" class="flex items-center space-x-1 text-sm text-gray-600 hover:text-indigo-600 transition duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 12m15.356 0h.001m-1.341 0a8.001 8.001 0 01-15.356 0H4a10.001 10.001 0 0015.004 7.35l2.45-2.45"></path></svg>
+                <span class="hidden sm:inline">刷新列表</span>
+            </button>
+        </header>
+
+        <!-- Loading / Error State -->
+        <div id="statusMessage" class="text-center py-12 text-gray-500">
+            <svg id="loadingSpinner" class="animate-spin h-8 w-8 text-indigo-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p id="messageText" class="mt-4 text-lg">正在加载软件列表...</p>
+        </div>
+
+        <!-- Software List -->
+        <div id="softwareList" class="space-y-4 hidden">
+            <!-- 软件卡片将在这里动态生成 -->
+        </div>
+
+        <!-- Modals (Placeholder for non-alert/confirm) -->
+        <div id="modalContainer"></div>
+    </div>
+
+    <script>
+        // API URL 用于获取软件列表数据
+        const API_URL = 'http://localhost:5000/api/software'; 
+        const softwareListContainer = document.getElementById('softwareList');
+        const statusMessage = document.getElementById('statusMessage');
+        const messageText = document.getElementById('messageText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        /**
+         * 显示自定义模态框（替代 alert/confirm）
+         * @param {string} title - 标题
+         * @param {string} message - 内容
+         * @param {string} type - 'info', 'success', 'error'
+         */
+        function showCustomModal(title, message, type = 'info') {
+            const modalContainer = document.getElementById('modalContainer');
+            modalContainer.innerHTML = ''; // 清空旧模态框
+
+            let iconHtml = '';
+            let buttonClass = 'bg-indigo-600 hover:bg-indigo-700';
+
+            if (type === 'success') {
+                iconHtml = '<svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                buttonClass = 'bg-green-600 hover:bg-green-700';
+            } else if (type === 'error') {
+                iconHtml = '<svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                buttonClass = 'bg-red-600 hover:bg-red-700';
+            } else {
+                iconHtml = '<svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            }
+
+            const modalHtml = `
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 transition-opacity duration-300" id="customModal">
+                    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+                        <div class="mb-4 flex justify-center">${iconHtml}</div>
+                        <h3 class="text-xl font-bold mb-2 text-center text-gray-900">${title}</h3>
+                        <p class="text-gray-600 mb-6 text-center">${message}</p>
+                        <div class="flex justify-center">
+                            <button id="modalCloseButton" class="w-full py-2 rounded-lg text-white font-medium transition duration-150 ${buttonClass}">确定</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modalContainer.innerHTML = modalHtml;
+            const modal = document.getElementById('customModal');
+            const content = document.getElementById('modalContent');
+            const closeButton = document.getElementById('modalCloseButton');
+
+            // Show modal with animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const closeModal = () => {
+                content.classList.remove('scale-100', 'opacity-100');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            };
+
+            closeButton.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        /**
+         * 渲染软件列表
+         * @param {Array<Object>} softwareList - 软件数据列表
+         */
+        function renderSoftwareList(softwareList) {
+            softwareListContainer.innerHTML = '';
+            
+            if (softwareList.length === 0) {
+                statusMessage.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                messageText.textContent = '暂无软件记录。请在管理后台添加。';
+                softwareListContainer.classList.add('hidden');
+                return;
+            }
+
+            statusMessage.classList.add('hidden');
+            softwareListContainer.classList.remove('hidden');
+
+            softwareList.forEach(soft => {
+                // 直接使用 API 返回的 logo_url 字段
+                const logoUrl = soft.logo_url 
+                    ? soft.logo_url 
+                    : 'https://placehold.co/80x80/6366f1/ffffff?text=App';
+                
+                const card = document.createElement('div');
+                card.className = "bg-gray-50 p-5 rounded-xl shadow-md flex items-start space-x-5 transition duration-200 hover:shadow-lg";
+                
+                const silentArgsDisplay = soft.silent_args || '无';
+                
+                // 确保下载链接有效，否则使用 #!
+                const downloadLink = soft.download_url && soft.download_url.startsWith('http') ? soft.download_url : '#!';
+
+                card.innerHTML = `
+                    <!-- Logo -->
+                    <img src="${logoUrl}" 
+                         alt="${soft.name} Logo" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/80x80/6366f1/ffffff?text=App';" 
+                         class="w-16 h-16 object-contain rounded-lg flex-shrink-0 bg-white border p-1">
+                    
+                    <!-- Info -->
+                    <div class="flex-grow min-w-0">
+                        <h2 class="text-xl font-bold text-gray-800 truncate">${soft.name} <span class="text-sm font-normal text-gray-500">v${soft.version || '1.0'}</span></h2>
+                        <p class="text-sm text-gray-600 line-clamp-2">${soft.description || '暂无描述'}</p>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <span>分类: ${soft.category || '未分类'}</span>
+                            <span class="ml-4">静默参数: ${silentArgsDisplay}</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Link (已改为直接下载链接) -->
+                    <div class="flex-shrink-0">
+                        <a href="${downloadLink}" 
+                           target="_blank" 
+                           download="${soft.name}-${soft.version || '1.0'}.exe"
+                           class="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150 transform hover:scale-[1.05] active:scale-[0.95] min-w-[64px]">
+                            下载
+                        </a>
+                    </div>
+                `;
+                softwareListContainer.appendChild(card);
+            });
+            
+            // 移除所有按钮事件监听逻辑，因为现在是纯链接下载
+        }
+
+        // 移除了 handleDownloadClick 函数，因为不再需要客户端脚本来处理下载请求。
+
+        /**
+         * 从 API 获取软件数据
+         */
+        async function fetchSoftwareList() {
+            messageText.textContent = '正在加载软件列表...';
+            loadingSpinner.classList.remove('hidden');
+            statusMessage.classList.remove('hidden');
+            softwareListContainer.classList.add('hidden');
+
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP 错误! 状态: ${response.status}`);
+                }
+                const data = await response.json();
+                renderSoftwareList(data);
+            } catch (error) {
+                console.error("获取软件列表失败:", error);
+                loadingSpinner.classList.add('hidden');
+                // 确保 API URL 变量名正确
+                const apiUrlDisplay = API_URL.startsWith('http') ? new URL(API_URL).origin : API_URL;
+                messageText.textContent = `获取数据失败，请检查 Flask 后端是否运行在 ${apiUrlDisplay}。 (${error.message})`;
+                softwareListContainer.classList.add('hidden');
+                statusMessage.classList.remove('hidden');
+            }
+        }
+
+        // 初始化加载和刷新按钮
+        document.addEventListener('DOMContentLoaded', fetchSoftwareList);
+        document.getElementById('refreshButton').addEventListener('click', fetchSoftwareList);
+    </script>
+</body>
+</html>
